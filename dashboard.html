@@ -1,0 +1,26 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Submit Complaint | TransitCare</title><link rel="stylesheet" href="/static/style.css"><link rel="stylesheet" href="/static/chatbot.css"></head><body>
+<nav class="navbar">
+    <h1>TransitCare</h1>
+    <div class="nav-actions">
+        <a href="/user_home">My Dashboard</a>
+        <a href="/logout">Logout</a>
+        <select id="languageSwitcher" class="language-switcher" aria-label="Language">
+            <option value="en">English</option>
+            <option value="hi">हिंदी</option>
+            <option value="mr">मराठी</option>
+        </select>
+    </div>
+</nav>
+<div class="container"><div class="page-head"><div><h2>Submit a Complaint</h2><p>Tell us what went wrong so the transport authority can take action.</p></div><a class="secondary-btn primary-btn" href="/user_home">← My Dashboard</a></div>
+{% if success_msg %}<div class="success-msg">✅ {{success_msg}}</div>{% endif %}
+<form method="POST" enctype="multipart/form-data"><div class="form-grid">
+<div><label>Transport Type</label><select name="transport_type"><option>Bus</option><option>Metro</option><option>Local Train</option></select></div>
+<div><label>Route Number</label><input type="text" name="route_number" placeholder="e.g. 421 / Blue Line" required></div>
+<div><label>Category</label><select name="category"><option>Delay</option><option>Cleanliness</option><option>Overcrowding</option><option>AC Not Working</option><option>Staff Behaviour</option></select></div>
+<div><label>Supporting Image</label><input type="file" name="image" accept="image/*"></div>
+<div class="form-full"><label>Description</label><textarea name="description" placeholder="Describe the issue clearly, including useful details such as location, time or what happened..." required></textarea></div>
+<div class="form-full"><button type="submit">Submit Complaint →</button></div></div></form>
+</div>
+{% if issues %}<div class="container"><div class="page-head"><div><h2>Your Complaints</h2><p>Review the complaints submitted from your account.</p></div></div><div style="overflow-x:auto"><table><tr><th>ID</th><th>Transport</th><th>Route</th><th>Category</th><th>Priority</th><th>Status</th><th>Confirm</th></tr>{% for issue in issues %}<tr><td><strong>#{{issue[0]}}</strong></td><td>{{issue[2]}}</td><td>{{issue[3]}}</td><td>{{issue[4]}}</td><td class="priority-{{issue[7]|lower}}">{{issue[7]}}</td><td class="status-{{ 'review' if issue[8]=='In Review' else issue[8]|lower }}">{{issue[8]}}</td><td><form method="POST" action="/confirm_issue"><input type="hidden" name="issue_id" value="{{issue[0]}}"><button class="secondary-btn" type="submit">Confirm 👍</button></form><small>{{issue[10]}} confirmations</small></td></tr>{% endfor %}</table></div></div>{% endif %}
+<button class="chatbot-button" onclick="toggleChatbot()">💬</button><div class="chatbot-window" id="chatbotWindow"><div class="chatbot-header"><div class="chatbot-header-left"><div class="chatbot-avatar">🤖</div><div><div class="chatbot-title">TransitCare Assistant</div><div class="chatbot-status">● Online</div></div></div><button class="chatbot-close" onclick="toggleChatbot()">×</button></div><div class="chatbot-messages" id="chatbotMessages"><div class="chat-message bot-message"><div class="message-bubble">👋 Need help? I can guide you with your complaint or connect you with customer care.</div></div></div><div class="chatbot-quick-actions"><button class="quick-button" onclick="quickMessage('I want to check my complaint status')">🔎 Status</button><button class="quick-button" onclick="quickMessage('I need customer care')">👨‍💼 Customer Care</button></div><div class="chatbot-input-area"><input type="text" id="chatbotInput" class="chatbot-input" placeholder="Type your message..." onkeydown="chatbotEnter(event)"><button class="chatbot-send" onclick="sendMessage()">➤</button></div></div><script src="/static/chatbot.js"></script>
+<script src="/static/language.js"></script></body></html>

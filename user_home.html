@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>My Dashboard | TransitCare</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/chatbot.css">
+    <style>
+        html { scroll-behavior: smooth; }
+        .complaints-section { scroll-margin-top: 90px; }
+        .community-search {
+            display:flex; align-items:center; gap:10px; margin:20px 0;
+            padding:10px 14px; background:#fff; border:1px solid #e2e8f0;
+            border-radius:12px; box-shadow:0 4px 14px rgba(15,23,42,.05);
+        }
+        .community-search .search-icon { font-size:18px; }
+        .community-search input {
+            flex:1; border:0; outline:0; background:transparent;
+            font-size:14px; color:#1e293b; min-width:0;
+        }
+        .community-search input::placeholder { color:#94a3b8; }
+        .community-search button {
+            border:0; background:#f1f5f9; color:#475569; padding:7px 12px;
+            border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;
+        }
+        .community-search button:hover { background:#e2e8f0; }
+        .complaint-status {
+            display:inline-block; padding:6px 12px; border-radius:20px;
+            font-size:13px; font-weight:600; white-space:nowrap;
+        }
+        .status-pending { background:#fff7ed; color:#c2410c; }
+        .status-review { background:#eff6ff; color:#2563eb; }
+        .status-resolved { background:#f0fdf4; color:#15803d; }
+        .complaint-id { font-size:12px; color:#64748b; }
+        @media (max-width:600px) {
+            .community-search { padding:9px 10px; }
+            .community-search button { padding:7px 9px; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <h1>TransitCare</h1>
+    <div class="nav-actions">
+        <a href="#your-complaints">Your Complaints</a>
+        <a href="/dashboard">Submit Complaint</a>
+        <a href="/logout">Logout</a>
+        <select id="languageSwitcher" class="language-switcher" aria-label="Language">
+            <option value="en">English</option>
+            <option value="hi">हिंदी</option>
+            <option value="mr">मराठी</option>
+        </select>
+    </div>
+</nav>
+
+<div class="container" style="background:transparent;border:0;box-shadow:none;padding-bottom:0">
+    <div class="page-head">
+        <div>
+            <h2>Welcome back 👋</h2>
+            <p>Manage your transport complaints and follow their progress.</p>
+        </div>
+        <a href="/dashboard" class="primary-btn">＋ Submit Complaint</a>
+    </div>
+
+    {% if confirm_msg %}
+    <div class="success-msg">✅ {{confirm_msg}}</div>
+    {% endif %}
+
+    <div class="user-cards">
+        <div class="user-card"><h3>{{total}}</h3><p>Total complaints</p></div>
+        <div class="user-card"><h3>{{pending}}</h3><p>Pending</p></div>
+        <div class="user-card"><h3>{{resolved}}</h3><p>Resolved</p></div>
+    </div>
+</div>
+
+<section class="container complaints-section" id="your-complaints">
+    <div class="section-heading">
+        <h2>Your Complaints</h2>
+        <p>View the issues you reported and track their current progress.</p>
+    </div>
+
+    {% if issues %}
+    <div style="overflow-x:auto">
+        <table>
+            <thead>
+                <tr>
+                    <th>Complaint</th>
+                    <th>Transport</th>
+                    <th>Route</th>
+                    <th>Date</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for issue in issues %}
+                <tr>
+                    <td>
+                        <strong>{{issue[4]}}</strong><br>
+                        <span class="complaint-id">Complaint #{{issue[0]}}</span>
+                    </td>
+                    <td>{{issue[2]}}</td>
+                    <td><strong>{{issue[3]}}</strong></td>
+                    <td>{{issue[6]}}</td>
+                    <td>{{issue[7]}}</td>
+                    <td>
+                        {% if issue[8] == "Pending" %}
+                        <span class="complaint-status status-pending">🟠 Pending</span>
+                        {% elif issue[8] == "In Review" %}
+                        <span class="complaint-status status-review">🔵 In Review</span>
+                        {% elif issue[8] == "Resolved" %}
+                        <span class="complaint-status status-resolved">🟢 Resolved</span>
+                        {% else %}
+                        <span class="complaint-status">{{issue[8]}}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No complaints yet</h3>
+        <p>You haven't reported any transport issues.</p>
+        <br>
+        <a href="/dashboard" class="primary-btn">＋ Report Your First Issue</a>
+    </div>
+    {% endif %}
+</section>
+
+<div class="container">
+    <div class="page-head">
+        <div>
+            <h2>Community Issues</h2>
+            <p>Search and confirm issues reported by other passengers.</p>
+        </div>
+    </div>
+
+    <div class="community-search">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="communitySearch"
+               placeholder="Search by route, transport, category or issue..."
+               onkeyup="searchCommunityIssues()">
+        <button type="button" onclick="clearCommunitySearch()">Clear</button>
+    </div>
+
+    <div style="overflow-x:auto">
+        <table id="communityIssuesTable">
+            <thead>
+                <tr>
+                    <th>Transport</th>
+                    <th>Route</th>
+                    <th>Category</th>
+                    <th>Confirmations</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for issue in all_issues %}
+                <tr class="community-issue-row">
+                    <td>{{issue[2]}}</td>
+                    <td><strong>{{issue[3]}}</strong></td>
+                    <td>{{issue[4]}}</td>
+                    <td>{{issue[10]}}</td>
+                    <td>
+                        <form method="POST" action="/confirm_issue">
+                            <input type="hidden" name="issue_id" value="{{issue[0]}}">
+                            <button class="secondary-btn" type="submit">Confirm 👍</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr class="community-empty-row">
+                    <td colspan="5"><div class="empty-state">No issues have been reported yet.</div></td>
+                </tr>
+                {% endfor %}
+                <tr id="noSearchResults" style="display:none">
+                    <td colspan="5"><div class="empty-state">🔍 No matching community issues found.</div></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<button class="chatbot-button" onclick="toggleChatbot()">💬</button>
+<div class="chatbot-window" id="chatbotWindow">
+    <div class="chatbot-header">
+        <div class="chatbot-header-left">
+            <div class="chatbot-avatar">🤖</div>
+            <div>
+                <div class="chatbot-title">TransitCare Assistant</div>
+                <div class="chatbot-status">● Online</div>
+            </div>
+        </div>
+        <button class="chatbot-close" onclick="toggleChatbot()">×</button>
+    </div>
+    <div class="chatbot-messages" id="chatbotMessages">
+        <div class="chat-message bot-message">
+            <div class="message-bubble">👋 Hello! I can check your complaint status or help with customer care.</div>
+        </div>
+    </div>
+    <div class="chatbot-quick-actions">
+        <button class="quick-button" onclick="quickMessage('I want to check my complaint status')">🔎 Complaint Status</button>
+        <button class="quick-button" onclick="quickMessage('I need customer care')">👨‍💼 Customer Care</button>
+    </div>
+    <div class="chatbot-input-area">
+        <input type="text" id="chatbotInput" class="chatbot-input" placeholder="Type your message..." onkeydown="chatbotEnter(event)">
+        <button class="chatbot-send" onclick="sendMessage()">➤</button>
+    </div>
+</div>
+
+<script src="/static/chatbot.js"></script>
+<script>
+function searchCommunityIssues() {
+    const searchText = document.getElementById("communitySearch").value.toLowerCase().trim();
+    const rows = document.querySelectorAll(".community-issue-row");
+    const noResults = document.getElementById("noSearchResults");
+    let visibleRows = 0;
+
+    rows.forEach(function(row) {
+        const matches = row.textContent.toLowerCase().includes(searchText);
+        row.style.display = matches ? "" : "none";
+        if (matches) visibleRows++;
+    });
+
+    noResults.style.display = (visibleRows === 0 && searchText !== "") ? "" : "none";
+}
+
+function clearCommunitySearch() {
+    const input = document.getElementById("communitySearch");
+    input.value = "";
+    searchCommunityIssues();
+    input.focus();
+}
+</script>
+
+<script src="/static/language.js"></script></body>
+</html>
